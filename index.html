@@ -1037,10 +1037,8 @@ header {
 
 <script>
 (function() {
-  var DB_NAME = 'PhotoVaultDB';
-  var DB_VERSION = 2;
-  var STORE_NAME = 'photos';
-  var THUMB_SIZE = 400;
+  // ── API base URL (auto-detect: same origin or use tunnel URL) ──
+  var API_BASE = window.location.origin;
 
   // ── Bottom illustration rotation ──
   var ILLUST_PHOTOS = [
@@ -1082,65 +1080,43 @@ header {
 
   setInterval(rotateIllust, 3 * 60 * 1000);
 
-  // ── IndexedDB ──
-  var db = null;
-  var photos = [];
+  // ── Data ──
+  var photos = [];   // { id, name, type, size, url, createdAt }
   var currentLightboxIndex = -1;
   var selectMode = false;
   var selectedIds = new Set();
 
-  function openDB() {
-    return new Promise(function(resolve, reject) {
-      var req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = function(e) {
-        var d = e.target.result;
-        if (!d.objectStoreNames.contains(STORE_NAME)) {
-          var s = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          s.createIndex('name', 'name', { unique: false });
-          s.createIndex('createdAt', 'createdAt', { unique: false });
-        }
-      };
-      req.onsuccess = function(e) { db = e.target.result; resolve(db); };
-      req.onerror = function(e) { reject(e.target.error); };
+  // ── API calls ──
+  function api(method, path, body) {
+    var opts = { method: method, headers: {} };
+    if (body) { opts.body = body; }
+    return fetch(API_BASE + path, opts).then(function(r) {
+      if (!r.ok) throw new Error(r.status);
+      var ct = r.headers.get('content-type');
+      if (ct && ct.indexOf('application/json') !== -1) return r.json();
+      return r.text();
     });
   }
 
-  function getAllPhotos() {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(STORE_NAME, 'readonly');
-      var r = tx.objectStore(STORE_NAME).getAll();
-      r.onsuccess = function() { resolve(r.result || []); };
-      r.onerror = function(e) { reject(e.target.error); };
+  function loadFiles() {
+    return api('GET', '/api/files').then(function(data) {
+      photos = data || [];
+      photos.sort(function(a, b) { return b.createdAt - a.createdAt; });
     });
   }
 
-  function addPhoto(p) {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(STORE_NAME, 'readwrite');
-      var r = tx.objectStore(STORE_NAME).add(p);
-      r.onsuccess = function() { resolve(p); };
-      r.onerror = function(e) { reject(e.target.error); };
-    });
+  function uploadFile(file) {
+    var form = new FormData();
+    form.append('file', file);
+    return api('POST', '/api/upload', form);
   }
 
-  function deletePhotos(ids) {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(STORE_NAME, 'readwrite');
-      var store = tx.objectStore(STORE_NAME);
-      var count = 0;
-      ids.forEach(function(id) { var r = store.delete(id); r.onsuccess = function() { count++; }; });
-      tx.oncomplete = function() { resolve(count); };
-      tx.onerror = function(e) { reject(e.target.error); };
-    });
+  function deleteFile(id) {
+    return api('DELETE', '/api/files/' + id);
   }
 
-  function clearAll() {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(STORE_NAME, 'readwrite');
-      var r = tx.objectStore(STORE_NAME).clear();
-      r.onsuccess = function() { resolve(); };
-      r.onerror = function(e) { reject(e.target.error); };
-    });
+  function clearAllFiles() {
+    return api('DELETE', '/api/files');
   }
 
   // ── DOM ──
@@ -1174,25 +1150,7 @@ header {
     toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 2200);
   }
 
-  // ── Thumbnail ──
-  function createThumbnail(dataUrl, maxSize) {
-    return new Promise(function(resolve) {
-      var img = new Image();
-      img.onload = function() {
-        var w = img.width, h = img.height;
-        if (w <= maxSize && h <= maxSize) { resolve(dataUrl); return; }
-        var ratio = Math.min(maxSize / w, maxSize / h);
-        var c = document.createElement('canvas');
-        c.width = Math.round(w * ratio);
-        c.height = Math.round(h * ratio);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        resolve(c.toDataURL('image/jpeg', 0.75));
-      };
-      img.src = dataUrl;
-    });
-  }
-
-  function isVideo(type) { return type.indexOf('video/') === 0; }
+  function isVideo(type) { return type && type.indexOf('video/') === 0; }
 
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + 'B';
@@ -1202,66 +1160,43 @@ header {
   }
 
   function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return '';
     var m = Math.floor(seconds / 60);
     var s = Math.floor(seconds % 60);
     return m + ':' + (s < 10 ? '0' : '') + s;
-  }
-
-  // ── Video thumbnail (capture first frame) ──
-  function createVideoThumb(dataUrl) {
-    return new Promise(function(resolve) {
-      var video = document.createElement('video');
-      video.preload = 'metadata';
-      video.muted = true;
-      video.playsInline = true;
-      video.src = dataUrl;
-
-      video.onloadeddata = function() {
-        video.currentTime = Math.min(1, video.duration / 3 || 1);
-      };
-
-      video.onseeked = function() {
-        var c = document.createElement('canvas');
-        c.width = 400;
-        c.height = Math.round(400 * (video.videoHeight / video.videoWidth)) || 300;
-        var ctx = c.getContext('2d');
-        ctx.drawImage(video, 0, 0, c.width, c.height);
-        var thumb = c.toDataURL('image/jpeg', 0.75);
-        resolve({ thumb: thumb, duration: video.duration || 0 });
-        video.remove();
-      };
-
-      video.onerror = function() { resolve({ thumb: null, duration: 0 }); video.remove(); };
-    });
   }
 
   function updateStorageBar() {
     if (photos.length === 0) { storageBarWrap.classList.remove('visible'); return; }
     storageBarWrap.classList.add('visible');
     var total = 0;
-    photos.forEach(function(p) { total += (p.dataUrl ? p.dataUrl.length * 0.75 : 0); });
-    var pct = Math.min(100, total / (50 * 1024 * 1024) * 100);
+    photos.forEach(function(p) { total += p.size || 0; });
+    // Server disk - show as percentage of 1GB (rough)
+    var pct = Math.min(100, total / (1024 * 1024 * 1024) * 100);
     storageBarFill.style.width = pct.toFixed(1) + '%';
-    storageBarPct.textContent = pct.toFixed(0) + '%';
+    storageBarPct.textContent = formatSize(total);
   }
 
   // ── Download ──
-  function downloadFile(dataUrl, filename) {
-    var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  function downloadFile(url, filename) {
+    fetch(url).then(function(r) { return r.blob(); }).then(function(blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+    });
   }
 
   function downloadPhotos(photoList) {
     if (photoList.length === 0) return;
-    if (photoList.length === 1) { downloadFile(photoList[0].dataUrl, photoList[0].name); return; }
-    showToast('开始下载 ' + photoList.length + ' 张照片...');
+    if (photoList.length === 1) { downloadFile(photoList[0].url, photoList[0].name); return; }
+    showToast('开始下载 ' + photoList.length + ' 个文件...');
     for (var i = 0; i < photoList.length; i++) {
       (function(idx) {
-        setTimeout(function() { downloadFile(photoList[idx].dataUrl, photoList[idx].name); }, idx * 200);
+        setTimeout(function() { downloadFile(photoList[idx].url, photoList[idx].name); }, idx * 300);
       })(i);
     }
   }
@@ -1280,7 +1215,7 @@ header {
     var cards = filtered.map(function(photo, idx) {
       var actualIdx = photos.indexOf(photo);
       var isSel = selectedIds.has(photo.id);
-      var src = photo.thumb || photo.dataUrl;
+      var src = photo.url;
       var delay = (idx * 0.035).toFixed(3);
       var cls = 'photo-card';
       if (isSel) cls += ' selected';
@@ -1309,7 +1244,7 @@ header {
     }).join('');
 
     if (filtered.length === 0 && photos.length === 0) {
-      gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">&#128230;</span><div class="empty-title">还没有照片哦~</div><div class="empty-text">快上传你的第一张照片来装饰小屋吧！</div></div>';
+      gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">&#128230;</span><div class="empty-title">还没有照片哦~</div><div class="empty-text">快上传照片和视频来装饰小屋吧！所有设备都能看到~</div></div>';
     } else if (filtered.length === 0) {
       gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">&#128269;</span><div class="empty-title">没有找到匹配的照片</div><div class="empty-text">换个关键词试试看~</div></div>';
     } else {
@@ -1357,7 +1292,7 @@ header {
         var id = btn.dataset.id;
         var photo = photos.find(function(p) { return p.id === id; });
         if (!photo) return;
-        if (btn.dataset.action === 'download') { downloadFile(photo.dataUrl, photo.name); showToast('文件已保存到电脑~'); }
+        if (btn.dataset.action === 'download') { downloadFile(photo.url, photo.name); showToast('文件已保存到电脑~'); }
         else { deleteAndRefresh([id]); }
       });
     });
@@ -1380,11 +1315,12 @@ header {
   }
 
   function deleteAndRefresh(ids) {
-    return deletePhotos(ids).then(function() {
+    var promises = ids.map(function(id) { return deleteFile(id); });
+    return Promise.all(promises).then(function() {
       ids.forEach(function(id) { selectedIds.delete(id); });
       photos = photos.filter(function(p) { return ids.indexOf(p.id) === -1; });
       renderGallery(searchInput.value);
-      showToast(ids.length === 1 ? '照片已删除~' : ids.length + ' 张照片已删除~');
+      showToast(ids.length === 1 ? '已删除~' : ids.length + ' 个文件已删除~');
     });
   }
 
@@ -1404,10 +1340,10 @@ header {
 
     if (vid) {
       lightboxImg.classList.add('hide');
-      lightboxVideo.src = p.dataUrl;
+      lightboxVideo.src = p.url;
       lightboxVideo.classList.add('show');
     } else {
-      lightboxImg.src = p.dataUrl;
+      lightboxImg.src = p.url;
     }
 
     lightboxName.textContent = (vid ? '&#127910; ' : '') + p.name;
@@ -1441,10 +1377,10 @@ header {
 
       if (vid) {
         lightboxImg.classList.add('hide');
-        lightboxVideo.src = p.dataUrl;
+        lightboxVideo.src = p.url;
         lightboxVideo.classList.add('show');
       } else {
-        lightboxImg.src = p.dataUrl;
+        lightboxImg.src = p.url;
       }
 
       lightboxName.textContent = (vid ? '&#127910; ' : '') + p.name;
@@ -1465,29 +1401,11 @@ header {
 
     var added = 0;
     var promises = valid.map(function(file) {
-      return new Promise(function(resolve) {
-        var reader = new FileReader();
-        reader.onload = function() {
-          var dataUrl = reader.result;
-          var isVid = isVideo(file.type);
-
-          var thumbPromise = isVid ? createVideoThumb(dataUrl) : createThumbnail(dataUrl, THUMB_SIZE).then(function(t) { return { thumb: t, duration: 0 }; });
-
-          thumbPromise.then(function(result) {
-            var photo = {
-              id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
-              name: file.name, type: file.type, size: file.size,
-              dataUrl: dataUrl, thumb: result.thumb || null, duration: result.duration || 0, createdAt: Date.now()
-            };
-            addPhoto(photo).then(function() {
-              photos.push(photo);
-              added++;
-              resolve();
-            }).catch(function() { resolve(); });
-          }).catch(function() { resolve(); });
-        };
-        reader.onerror = function() { resolve(); };
-        reader.readAsDataURL(file);
+      return uploadFile(file).then(function(saved) {
+        photos.unshift(saved);
+        added++;
+      }).catch(function() {
+        showToast('上传失败: ' + file.name);
       });
     });
 
@@ -1537,7 +1455,7 @@ header {
   lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
   $('lightboxDownload').addEventListener('click', function() {
     var p = photos[currentLightboxIndex];
-    if (p) { downloadFile(p.dataUrl, p.name); showToast('文件已保存到电脑~'); }
+    if (p) { downloadFile(p.url, p.name); showToast('文件已保存到电脑~'); }
   });
 
   document.addEventListener('keydown', function(e) {
@@ -1550,22 +1468,21 @@ header {
   exportAllBtn.addEventListener('click', function() { if (photos.length) downloadPhotos(photos); });
   clearAllBtn.addEventListener('click', function() {
     if (!confirm('确定要删除全部 ' + photos.length + ' 张照片吗？这个操作不能撤销哦！')) return;
-    clearAll().then(function() {
+    clearAllFiles().then(function() {
       photos = []; selectedIds.clear(); selectMode = false;
-      renderGallery(); showToast('所有照片已清空~');
+      renderGallery(); showToast('所有文件已清空~');
     });
   });
 
   // ── Init ──
   (function init() {
-    openDB().then(function() {
-      return getAllPhotos();
-    }).then(function(all) {
-      photos = all;
-      photos.sort(function(a, b) { return b.createdAt - a.createdAt; });
+    loadFiles().then(function() {
       renderGallery();
     }).catch(function(err) {
-      showToast('初始化失败，请刷新页面重试~');
+      console.error(err);
+      showToast('连接服务器失败，请确认服务器已启动~');
+      // Show empty state
+      renderGallery();
     });
   })();
 })();
