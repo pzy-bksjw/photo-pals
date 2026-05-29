@@ -1041,41 +1041,49 @@ header {
   var API_BASE = window.location.origin;
 
   // ── Bottom illustration rotation ──
-  var ILLUST_PHOTOS = [
-    '4D02B07F3003BCC8D8EB6E3694173A8A (1).png',
-    '4D02B07F3003BCC8D8EB6E3694173A8A (2).png',
-    '4D02B07F3003BCC8D8EB6E3694173A8A (3).png',
-    '4D02B07F3003BCC8D8EB6E3694173A8A (4).png',
-    '4D02B07F3003BCC8D8EB6E3694173A8A (5).png'
-  ];
+  // ── Bottom illustration rotation (uses CSS gradient if no photos) ──
+  var ILLUST_PHOTOS = [];
 
-  var illustIndex = 0;
-  var illustActive = 'A';
 
-  ILLUST_PHOTOS.forEach(function(src) {
-    var img = new Image();
-    img.src = src;
-  });
+  var illustA = document.getElementById("illustA");
+  var illustB = document.getElementById("illustB");
 
-  var illustA = document.getElementById('illustA');
-  var illustB = document.getElementById('illustB');
+  function preloadIllusts() {
+    ILLUST_PHOTOS.forEach(function(src) {
+      var img = new Image();
+      img.src = src;
+    });
+  }
 
-  illustA.style.backgroundImage = 'url(' + ILLUST_PHOTOS[0] + ')';
-  if (ILLUST_PHOTOS.length > 1) {
-    illustB.style.backgroundImage = 'url(' + ILLUST_PHOTOS[1] + ')';
+  function initIllusts() {
+    if (ILLUST_PHOTOS.length === 0) {
+      illustA.style.display = "none";
+      illustB.style.display = "none";
+      return;
+    }
+    illustA.style.backgroundImage = "url(" + ILLUST_PHOTOS[0] + ")";
+    illustA.classList.add("active");
+    if (ILLUST_PHOTOS.length > 1) {
+      illustB.style.backgroundImage = "url(" + ILLUST_PHOTOS[1] + ")";
+    }
+    setInterval(rotateIllust, 3 * 60 * 1000);
   }
 
   function rotateIllust() {
+    if (ILLUST_PHOTOS.length === 0) return;
     illustIndex = (illustIndex + 1) % ILLUST_PHOTOS.length;
     var nextSrc = ILLUST_PHOTOS[illustIndex];
-    var incoming = illustActive === 'A' ? illustB : illustA;
-    var outgoing = illustActive === 'A' ? illustA : illustB;
-
-    incoming.style.backgroundImage = 'url(' + nextSrc + ')';
+    var incoming = illustActive === "A" ? illustB : illustA;
+    var outgoing = illustActive === "A" ? illustA : illustB;
+    incoming.style.backgroundImage = "url(" + nextSrc + ")";
     incoming.offsetHeight;
-    incoming.classList.add('active');
-    outgoing.classList.remove('active');
-    illustActive = illustActive === 'A' ? 'B' : 'A';
+    incoming.classList.add("active");
+    outgoing.classList.remove("active");
+    illustActive = illustActive === "A" ? "B" : "A";
+  }
+
+  preloadIllusts();
+  initIllusts();
   }
 
   setInterval(rotateIllust, 3 * 60 * 1000);
