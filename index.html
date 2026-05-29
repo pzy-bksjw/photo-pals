@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Pals — 照片小屋</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   Photo Pals — 卡通可爱风格照片小屋
+   ═══════════════════════════════════════════ */
+
+:root {
+  --cream: #fef9f0;
+  --white: #ffffff;
+  --pink: #ff7b8a;
+  --pink-light: #ffe0e5;
+  --pink-glow: rgba(255,123,138,0.25);
+  --mint: #7ec8a5;
+  --mint-light: #d4f2e4;
+  --orange: #ffb347;
+  --orange-light: #fff0d9;
+  --lavender: #b8a9e8;
+  --lavender-light: #eae4f9;
+  --sky: #7ec8e3;
+  --sky-light: #daf0fa;
+  --text: #4a3f50;
+  --text-soft: #8b7d92;
+  --text-muted: #bfb3c4;
+  --border-soft: #f0e8f2;
+  --shadow-card: 0 4px 20px rgba(180,160,190,0.15);
+  --shadow-hover: 0 12px 36px rgba(180,160,190,0.28);
+  --shadow-btn: 0 4px 0 rgba(0,0,0,0.08);
+  --display: 'Fredoka', sans-serif;
+  --body: 'Nunito', sans-serif;
+  --radius-sm: 12px;
+  --radius: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 40px;
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+/* ══════════ BODY ══════════ */
+body {
+  font-family: var(--body);
+  background-color: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* ── Decorative background pattern ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    radial-gradient(circle at 10% 20%, var(--pink-light) 0%, transparent 50%),
+    radial-gradient(circle at 85% 15%, var(--sky-light) 0%, transparent 45%),
+    radial-gradient(circle at 20% 80%, var(--mint-light) 0%, transparent 40%),
+    radial-gradient(circle at 75% 70%, var(--lavender-light) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, var(--orange-light) 0%, transparent 50%);
+  background-size: 100% 100%;
+}
+
+/* ── Floating decorative dots ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    radial-gradient(circle, var(--pink) 1.5px, transparent 1.5px),
+    radial-gradient(circle, var(--mint) 2px, transparent 2px),
+    radial-gradient(circle, var(--orange) 1.5px, transparent 1.5px),
+    radial-gradient(circle, var(--lavender) 2.5px, transparent 2.5px),
+    radial-gradient(circle, var(--sky) 1.8px, transparent 1.8px),
+    radial-gradient(circle, var(--pink) 2px, transparent 2px),
+    radial-gradient(circle, var(--mint) 1.5px, transparent 1.5px),
+    radial-gradient(circle, var(--orange) 2.2px, transparent 2.2px),
+    radial-gradient(circle, var(--lavender) 1.6px, transparent 1.6px),
+    radial-gradient(circle, var(--sky) 2px, transparent 2px);
+  background-size: 80px 80px, 120px 120px, 90px 90px, 140px 140px, 100px 100px, 110px 110px, 130px 130px, 95px 95px, 115px 115px, 85px 85px;
+  background-position: 5% 8%, 25% 15%, 45% 5%, 65% 12%, 85% 6%, 15% 85%, 35% 92%, 55% 88%, 75% 95%, 92% 90%;
+  animation: dotsFloat 20s ease-in-out infinite;
+}
+
+@keyframes dotsFloat {
+  0%, 100% { background-position: 5% 8%, 25% 15%, 45% 5%, 65% 12%, 85% 6%, 15% 85%, 35% 92%, 55% 88%, 75% 95%, 92% 90%; }
+  25%      { background-position: 8% 12%, 22% 18%, 48% 8%, 62% 15%, 88% 3%, 12% 82%, 38% 95%, 52% 85%, 78% 98%, 90% 87%; }
+  50%      { background-position: 3% 10%, 28% 12%, 42% 3%, 68% 10%, 82% 8%, 18% 88%, 32% 90%, 58% 92%, 72% 93%, 95% 92%; }
+  75%      { background-position: 10% 5%, 20% 20%, 50% 6%, 60% 14%, 90% 5%, 20% 80%, 40% 88%, 50% 95%, 80% 90%, 88% 95%; }
+}
+
+/* ══════════ APP SHELL ══════════ */
+.app-shell {
+  position: relative;
+  z-index: 1;
+  animation: shellReveal 0.6s var(--ease-smooth);
+}
+
+@keyframes shellReveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ══════════ HEADER ══════════ */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(254,249,240,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 2px dashed var(--border-soft);
+  padding: 0 2rem;
+  animation: headerBounce 0.7s var(--ease-bounce) 0.1s backwards;
+}
+
+@keyframes headerBounce {
+  from { transform: translateY(-80px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-icon {
+  font-size: 1.6rem;
+  animation: logoWiggle 3s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes logoWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25%      { transform: rotate(-8deg) scale(1.15); }
+  75%      { transform: rotate(8deg) scale(1.15); }
+}
+
+.logo-text {
+  background: linear-gradient(135deg, var(--pink), var(--orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.photo-count {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+/* ══════════ BUTTONS ══════════ */
+.btn {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.55rem 1.3rem;
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition:
+    transform 0.2s var(--ease-bounce),
+    box-shadow 0.2s var(--ease-smooth),
+    background 0.25s var(--ease-smooth);
+  white-space: nowrap;
+  position: relative;
+  box-shadow: var(--shadow-btn);
+}
+
+.btn:hover { transform: translateY(-2px) scale(1.04); }
+.btn:active { transform: translateY(1px) scale(0.97); box-shadow: none; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--pink), #ff9aa8);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 20px var(--pink-glow);
+  background: linear-gradient(135deg, #ff6b7a, var(--pink));
+}
+
+.btn-mint {
+  background: linear-gradient(135deg, var(--mint), #9ddbc0);
+  color: #fff;
+}
+
+.btn-mint:hover {
+  box-shadow: 0 6px 20px rgba(126,200,165,0.3);
+  background: linear-gradient(135deg, #6dbd95, var(--mint));
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  box-shadow: 0 6px 20px rgba(255,107,107,0.3);
+}
+
+.btn-outline {
+  background: var(--white);
+  color: var(--text);
+  border: 2px solid var(--border-soft);
+  box-shadow: none;
+}
+
+.btn-outline:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+  box-shadow: 0 4px 16px rgba(255,123,138,0.12);
+}
+
+/* ══════════ SELECTION TOOLBAR ══════════ */
+.selection-toolbar {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(140%);
+  z-index: 200;
+  background: var(--white);
+  border: 3px solid var(--pink);
+  border-radius: var(--radius-lg);
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  box-shadow: 0 8px 40px rgba(255,123,138,0.2);
+  transition: transform 0.4s var(--ease-bounce);
+}
+
+.selection-toolbar.active { transform: translateX(-50%) translateY(0); }
+
+.selection-info {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.selection-info .count-num {
+  color: var(--pink);
+  font-size: 1.1rem;
+}
+
+.selection-actions { display: flex; gap: 0.5rem; }
+
+/* ══════════ DROP ZONE ══════════ */
+.drop-zone {
+  max-width: 1400px;
+  margin: 1.5rem auto;
+  padding: 0 2rem;
+  animation: popIn 0.55s var(--ease-bounce) 0.2s backwards;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.drop-area {
+  border: 3px dashed var(--pink-light);
+  border-radius: var(--radius-lg);
+  padding: 2.8rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.3s var(--ease-smooth),
+    background 0.3s var(--ease-smooth),
+    transform 0.25s var(--ease-bounce),
+    box-shadow 0.3s var(--ease-smooth);
+  background: rgba(255,255,255,0.6);
+  position: relative;
+}
+
+.drop-area:hover {
+  border-color: var(--pink);
+  background: rgba(255,255,255,0.85);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.drop-area.drag-over {
+  border-color: var(--pink);
+  border-style: solid;
+  background: var(--pink-light);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-hover);
+  animation: dropBounce 0.6s var(--ease-bounce) infinite;
+}
+
+@keyframes dropBounce {
+  0%, 100% { transform: scale(1.02); }
+  50%      { transform: scale(1.04); }
+}
+
+.drop-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  animation: dropFloat 2.5s ease-in-out infinite;
+}
+
+@keyframes dropFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+.drop-title {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.drop-subtitle {
+  font-family: var(--display);
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+
+#file-input { display: none; }
+
+/* ══════════ TOOLBAR ROW ══════════ */
+.toolbar-row {
+  max-width: 1400px;
+  margin: 0 auto 1.2rem;
+  padding: 0 2rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  animation: popIn 0.5s var(--ease-bounce) 0.3s backwards;
+}
+
+.search-input {
+  flex: 1;
+  background: var(--white);
+  border: 3px solid var(--border-soft);
+  border-radius: var(--radius-xl);
+  padding: 0.65rem 1.2rem;
+  font-family: var(--display);
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 500;
+  transition:
+    border-color 0.25s var(--ease-smooth),
+    box-shadow 0.25s var(--ease-smooth);
+}
+
+.search-input::placeholder { color: var(--text-muted); font-size: 0.8rem; }
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--pink);
+  box-shadow: 0 0 0 4px var(--pink-light);
+}
+
+.select-toggle {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 0.55rem 1rem;
+  border: 3px solid var(--border-soft);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  transition: all 0.25s var(--ease-smooth);
+  white-space: nowrap;
+}
+
+.select-toggle:hover { border-color: var(--pink); color: var(--pink); }
+.select-toggle.active { border-color: var(--pink); color: var(--pink); background: var(--pink-light); }
+
+/* ══════════ GALLERY ══════════ */
+.gallery-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 5rem;
+}
+
+.gallery {
+  columns: 4 270px;
+  column-gap: 1rem;
+}
+
+/* ══════════ PHOTO CARD ══════════ */
+.photo-card {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  position: relative;
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 3px solid var(--border-soft);
+  overflow: hidden;
+  transition:
+    border-color 0.3s var(--ease-smooth),
+    transform 0.3s var(--ease-bounce),
+    box-shadow 0.3s var(--ease-smooth);
+  animation: cardPop 0.5s var(--ease-bounce) backwards;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+@keyframes cardPop {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.photo-card:hover {
+  border-color: var(--pink);
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: var(--shadow-hover);
+}
+
+.photo-card:nth-child(3n+1):hover { transform: translateY(-4px) rotate(0.5deg); }
+.photo-card:nth-child(3n+2):hover { transform: translateY(-4px) rotate(-0.7deg); }
+.photo-card:nth-child(5n+3):hover { border-color: var(--mint); }
+
+.photo-card.selected {
+  border-color: var(--pink);
+  border-width: 4px;
+  box-shadow: 0 0 0 4px var(--pink-light), var(--shadow-hover);
+  animation: selectedWiggle 3s ease-in-out infinite;
+}
+
+@keyframes selectedWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(0.5deg); }
+  75%      { transform: rotate(-0.5deg); }
+}
+
+.photo-card img {
+  width: 100%;
+  display: block;
+  transition: transform 0.45s var(--ease-bounce);
+}
+
+.photo-card:hover img { transform: scale(1.05); }
+
+/* ── Card check ── */
+.photo-card .card-check {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255,255,255,0.8);
+  border-radius: 50%;
+  background: rgba(0,0,0,0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.25s var(--ease-bounce);
+  font-size: 0.65rem;
+  color: #fff;
+  font-weight: 700;
+}
+
+.photo-card.select-mode .card-check,
+.photo-card:hover .card-check { opacity: 1; transform: scale(1); }
+
+.photo-card.selected .card-check {
+  opacity: 1;
+  transform: scale(1);
+  background: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ── Card actions ── */
+.photo-card .card-actions {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 3;
+  display: flex;
+  gap: 0.35rem;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: all 0.25s var(--ease-bounce);
+}
+
+.photo-card:hover .card-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card-action-btn {
+  width: 30px;
+  height: 30px;
+  background: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 50%;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.2s var(--ease-bounce);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-weight: 700;
+}
+
+.card-action-btn:hover {
+  transform: scale(1.15);
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--pink-glow);
+}
+
+.card-action-btn.danger:hover {
+  background: #ff6b6b;
+  box-shadow: 0 4px 14px rgba(255,107,107,0.3);
+}
+
+.photo-meta {
+  padding: 0.5rem 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--white);
+}
+
+.photo-name {
+  font-family: var(--display);
+  font-size: 0.7rem;
+  color: var(--text-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-weight: 500;
+}
+
+.photo-size {
+  font-family: var(--display);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ══════════ BOTTOM ILLUSTRATION STRIP ══════════ */
+.bottom-illustration {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bottom-illustration .illustration-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-illustration .illustration-img.active { opacity: 0.3; }
+
+/* Gradient fade on top of illustration */
+.bottom-illustration::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,
+    rgba(254,249,240,0.3) 0%,
+    rgba(254,249,240,0.6) 40%,
+    rgba(254,249,240,0.92) 85%,
+    rgba(254,249,240,1) 100%);
+  z-index: 1;
+}
+
+/* Decorative frame dots on illustration strip */
+.bottom-illustration::after {
+  content: '';
+  position: absolute;
+  top: 12%;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  border-top: 3px dotted rgba(180,160,190,0.4);
+  z-index: 2;
+}
+
+/* ══════════ LIGHTBOX ══════════ */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s var(--ease-smooth), visibility 0.35s var(--ease-smooth);
+}
+
+.lightbox.open { opacity: 1; visibility: visible; }
+
+.lightbox-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 92vw;
+  max-height: 92vh;
+  transform: scale(0.9);
+  transition: transform 0.45s var(--ease-bounce);
+}
+
+.lightbox.open .lightbox-content { transform: scale(1); }
+
+.lightbox-content img {
+  max-width: 88vw;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: var(--radius);
+  border: 3px solid rgba(255,255,255,0.15);
+  transition: opacity 0.2s ease;
+}
+
+.lightbox-content img.switching { opacity: 0.35; }
+
+.lightbox-info {
+  margin-top: 0.7rem;
+  font-family: var(--display);
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-weight: 500;
+}
+
+.lightbox-info .info-sep {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+}
+
+.lightbox-download {
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pink), #ff9aa8);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-bounce);
+  box-shadow: 0 4px 14px var(--pink-glow);
+}
+
+.lightbox-download:hover { transform: scale(1.08); box-shadow: 0 6px 20px var(--pink-glow); }
+
+.lightbox-close {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  font-family: var(--display);
+  font-weight: 600;
+  transition: all 0.25s var(--ease-bounce);
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-close:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+  transform: scale(1.1) rotate(90deg);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.25s var(--ease-bounce);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-weight: 600;
+}
+
+.lightbox-nav:hover {
+  background: var(--pink);
+  border-color: var(--pink);
+  transform: translateY(-50%) scale(1.12);
+}
+
+.lightbox-prev { left: 2rem; }
+.lightbox-next { right: 2rem; }
+
+/* ══════════ EMPTY STATE ══════════ */
+.empty-state {
+  text-align: center;
+  padding: 7rem 2rem;
+  animation: emptyBounce 3s ease-in-out infinite;
+}
+
+@keyframes emptyBounce {
+  0%, 100% { transform: translateY(0); }
+  30%      { transform: translateY(-10px); }
+  60%      { transform: translateY(-4px); }
+}
+
+.empty-icon {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.empty-title {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  margin-bottom: 0.3rem;
+}
+
+.empty-text {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ══════════ TOAST ══════════ */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--white);
+  border: 3px solid var(--pink);
+  border-radius: var(--radius);
+  padding: 0.7rem 1.3rem;
+  font-family: var(--display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  z-index: 3000;
+  transform: translateY(100px) scale(0.85);
+  opacity: 0;
+  transition: transform 0.45s var(--ease-bounce), opacity 0.35s var(--ease-smooth);
+  box-shadow: 0 8px 30px rgba(255,123,138,0.2);
+}
+
+.toast.show { transform: translateY(0) scale(1); opacity: 1; }
+
+/* ══════════ STORAGE BAR ══════════ */
+.storage-bar-wrap {
+  max-width: 1400px;
+  margin: 0 auto 0.6rem;
+  padding: 0 2rem;
+  display: none;
+}
+
+.storage-bar-wrap.visible { display: block; }
+
+.storage-bar-label {
+  font-family: var(--display);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 500;
+}
+
+.storage-bar {
+  height: 8px;
+  background: var(--border-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--mint), var(--pink));
+  transition: width 0.6s var(--ease-smooth);
+}
+
+/* ══════════ RESPONSIVE ══════════ */
+@media (max-width: 768px) {
+  header { padding: 0 1rem; }
+  .header-inner { height: 60px; }
+  .logo { font-size: 1.05rem; }
+  .gallery { columns: 2 155px; column-gap: 0.6rem; }
+  .photo-card { margin-bottom: 0.6rem; border-radius: var(--radius-sm); }
+  .gallery-container { padding: 0 1rem 4rem; }
+  .drop-area { padding: 2.2rem 1rem; border-radius: var(--radius); }
+  .drop-title { font-size: 1.1rem; }
+  .drop-icon { font-size: 2.4rem; }
+  .toolbar-row { padding: 0 1rem; flex-wrap: wrap; }
+  .drop-zone { padding: 0 1rem; margin: 1rem auto; }
+  .selection-toolbar { padding: 0.5rem 1rem; gap: 0.6rem; left: 1rem; right: 1rem; transform: translateY(140%); }
+  .selection-toolbar.active { transform: translateX(0) translateY(0); }
+  .lightbox-prev { left: 0.5rem; }
+  .lightbox-next { right: 0.5rem; }
+  .lightbox-close { top: 1rem; right: 1rem; }
+  .header-actions { gap: 0.4rem; }
+  .btn { padding: 0.4rem 0.8rem; font-size: 0.72rem; }
+  .bottom-illustration { height: 24vh; }
+}
+
+@media (max-width: 480px) {
+  .gallery { columns: 1; }
+  .selection-actions { gap: 0.35rem; }
+  .selection-toolbar { flex-wrap: wrap; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Bottom illustration strip (local photos) ── -->
+<div class="bottom-illustration">
+  <div class="illustration-img active" id="illustA"></div>
+  <div class="illustration-img" id="illustB"></div>
+</div>
+
+<div class="app-shell">
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">&#128248;</span>
+      <span class="logo-text">Photo Pals</span>
+    </div>
+    <div class="header-actions">
+      <span class="photo-count" id="photoCount">0 张照片</span>
+      <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">&#128228; 上传</button>
+      <button class="btn btn-mint" id="exportAllBtn" title="导出全部" style="display:none">&#128190; 导出</button>
+      <button class="btn btn-danger" id="clearAllBtn" title="清空" style="display:none">&#128465; 清空</button>
+    </div>
+  </div>
+</header>
+
+<div class="drop-zone">
+  <div class="drop-area" id="dropArea">
+    <span class="drop-icon">&#127873;</span>
+    <div class="drop-title">把照片拖到这里吧 ~</div>
+    <div class="drop-subtitle">或者点击这里选择文件 · JPG / PNG / WebP / GIF</div>
+  </div>
+  <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+</div>
+
+<div class="storage-bar-wrap" id="storageBarWrap">
+  <div class="storage-bar-label">
+    <span>小房子还有多少空间？</span>
+    <span id="storageBarPct">0%</span>
+  </div>
+  <div class="storage-bar"><div class="storage-bar-fill" id="storageBarFill" style="width:0%"></div></div>
+</div>
+
+<div class="toolbar-row" id="toolbarRow" style="display:none">
+  <input type="text" class="search-input" id="searchInput" placeholder="&#128269; 找找你的照片...">
+  <button class="select-toggle" id="selectToggle">&#9744; 选择</button>
+</div>
+
+<div class="gallery-container">
+  <div class="gallery" id="gallery">
+    <div class="empty-state">
+      <span class="empty-icon">&#128230;</span>
+      <div class="empty-title">还没有照片哦~</div>
+      <div class="empty-text">快上传你的第一张照片来装饰小屋吧！</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .app-shell -->
+
+<!-- Selection Toolbar -->
+<div class="selection-toolbar" id="selectionToolbar">
+  <span class="selection-info">已选 <span class="count-num" id="selectionCount">0</span> 张</span>
+  <div class="selection-actions">
+    <button class="btn btn-mint" id="downloadSelected">&#128190; 下载</button>
+    <button class="btn btn-danger" id="deleteSelected">&#128465; 删除</button>
+    <button class="btn btn-outline" id="cancelSelection">&#10005; 取消</button>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">&times;</button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev">&larr;</button>
+  <button class="lightbox-nav lightbox-next" id="lightboxNext">&rarr;</button>
+  <div class="lightbox-content">
+    <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-info">
+      <span id="lightboxName"></span>
+      <span class="info-sep"></span>
+      <span id="lightboxDate"></span>
+      <span class="info-sep"></span>
+      <span id="lightboxIndex"></span>
+      <button class="lightbox-download" id="lightboxDownload">&#128190; 下载原图</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  var DB_NAME = 'PhotoVaultDB';
+  var DB_VERSION = 2;
+  var STORE_NAME = 'photos';
+  var THUMB_SIZE = 400;
+
+  // ── Bottom illustration rotation ──
+  var ILLUST_PHOTOS = [
+    '317803D521388617FC2D94B0D30CA9D5.png',
+    '4D02B07F3003BCC8D8EB6E3694173A8A.jpg',
+    '91E423CAC095A8FCFC1A7B7B9610DAF2.png',
+    'A53E9F7ADE96098ADAD5F62E88EF59DD.png',
+    'D9E9D9D9854EE575E75ACF0FD3658BC6.png'
+  ];
+
+  var illustIndex = 0;
+  var illustActive = 'A';
+
+  ILLUST_PHOTOS.forEach(function(src) {
+    var img = new Image();
+    img.src = src;
+  });
+
+  var illustA = document.getElementById('illustA');
+  var illustB = document.getElementById('illustB');
+
+  illustA.style.backgroundImage = 'url(' + ILLUST_PHOTOS[0] + ')';
+  if (ILLUST_PHOTOS.length > 1) {
+    illustB.style.backgroundImage = 'url(' + ILLUST_PHOTOS[1] + ')';
+  }
+
+  function rotateIllust() {
+    illustIndex = (illustIndex + 1) % ILLUST_PHOTOS.length;
+    var nextSrc = ILLUST_PHOTOS[illustIndex];
+    var incoming = illustActive === 'A' ? illustB : illustA;
+    var outgoing = illustActive === 'A' ? illustA : illustB;
+
+    incoming.style.backgroundImage = 'url(' + nextSrc + ')';
+    incoming.offsetHeight;
+    incoming.classList.add('active');
+    outgoing.classList.remove('active');
+    illustActive = illustActive === 'A' ? 'B' : 'A';
+  }
+
+  setInterval(rotateIllust, 3 * 60 * 1000);
+
+  // ── IndexedDB ──
+  var db = null;
+  var photos = [];
+  var currentLightboxIndex = -1;
+  var selectMode = false;
+  var selectedIds = new Set();
+
+  function openDB() {
+    return new Promise(function(resolve, reject) {
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function(e) {
+        var d = e.target.result;
+        if (!d.objectStoreNames.contains(STORE_NAME)) {
+          var s = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          s.createIndex('name', 'name', { unique: false });
+          s.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+      };
+      req.onsuccess = function(e) { db = e.target.result; resolve(db); };
+      req.onerror = function(e) { reject(e.target.error); };
+    });
+  }
+
+  function getAllPhotos() {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readonly');
+      var r = tx.objectStore(STORE_NAME).getAll();
+      r.onsuccess = function() { resolve(r.result || []); };
+      r.onerror = function(e) { reject(e.target.error); };
+    });
+  }
+
+  function addPhoto(p) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var r = tx.objectStore(STORE_NAME).add(p);
+      r.onsuccess = function() { resolve(p); };
+      r.onerror = function(e) { reject(e.target.error); };
+    });
+  }
+
+  function deletePhotos(ids) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+      var count = 0;
+      ids.forEach(function(id) { var r = store.delete(id); r.onsuccess = function() { count++; }; });
+      tx.oncomplete = function() { resolve(count); };
+      tx.onerror = function(e) { reject(e.target.error); };
+    });
+  }
+
+  function clearAll() {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var r = tx.objectStore(STORE_NAME).clear();
+      r.onsuccess = function() { resolve(); };
+      r.onerror = function(e) { reject(e.target.error); };
+    });
+  }
+
+  // ── DOM ──
+  function $(s) { return document.getElementById(s); }
+  var gallery = $('gallery');
+  var photoCount = $('photoCount');
+  var searchInput = $('searchInput');
+  var selectToggle = $('selectToggle');
+  var selectionToolbar = $('selectionToolbar');
+  var selectionCount = $('selectionCount');
+  var toolbarRow = $('toolbarRow');
+  var clearAllBtn = $('clearAllBtn');
+  var exportAllBtn = $('exportAllBtn');
+  var dropArea = $('dropArea');
+  var fileInput = $('file-input');
+  var lightbox = $('lightbox');
+  var lightboxImg = $('lightboxImg');
+  var lightboxName = $('lightboxName');
+  var lightboxDate = $('lightboxDate');
+  var lightboxIndex = $('lightboxIndex');
+  var storageBarWrap = $('storageBarWrap');
+  var storageBarFill = $('storageBarFill');
+  var storageBarPct = $('storageBarPct');
+  var toast = $('toast');
+
+  var toastTimer = null;
+  function showToast(msg) {
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.textContent = msg;
+    toast.classList.add('show');
+    toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 2200);
+  }
+
+  // ── Thumbnail ──
+  function createThumbnail(dataUrl, maxSize) {
+    return new Promise(function(resolve) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w <= maxSize && h <= maxSize) { resolve(dataUrl); return; }
+        var ratio = Math.min(maxSize / w, maxSize / h);
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * ratio);
+        c.height = Math.round(h * ratio);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = dataUrl;
+    });
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + 'B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+  }
+
+  function updateStorageBar() {
+    if (photos.length === 0) { storageBarWrap.classList.remove('visible'); return; }
+    storageBarWrap.classList.add('visible');
+    var total = 0;
+    photos.forEach(function(p) { total += (p.dataUrl ? p.dataUrl.length * 0.75 : 0); });
+    var pct = Math.min(100, total / (50 * 1024 * 1024) * 100);
+    storageBarFill.style.width = pct.toFixed(1) + '%';
+    storageBarPct.textContent = pct.toFixed(0) + '%';
+  }
+
+  // ── Download ──
+  function downloadFile(dataUrl, filename) {
+    var a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function downloadPhotos(photoList) {
+    if (photoList.length === 0) return;
+    if (photoList.length === 1) { downloadFile(photoList[0].dataUrl, photoList[0].name); return; }
+    showToast('开始下载 ' + photoList.length + ' 张照片...');
+    for (var i = 0; i < photoList.length; i++) {
+      (function(idx) {
+        setTimeout(function() { downloadFile(photoList[idx].dataUrl, photoList[idx].name); }, idx * 200);
+      })(i);
+    }
+  }
+
+  // ── Render ──
+  function renderGallery(filterText) {
+    filterText = filterText || '';
+    var query = filterText.toLowerCase().trim();
+    var filtered = query ? photos.filter(function(p) { return p.name.toLowerCase().indexOf(query) !== -1; }) : photos;
+
+    var existingIds = new Set(photos.map(function(p) { return p.id; }));
+    var newSelected = new Set();
+    selectedIds.forEach(function(id) { if (existingIds.has(id)) newSelected.add(id); });
+    selectedIds = newSelected;
+
+    var cards = filtered.map(function(photo, idx) {
+      var actualIdx = photos.indexOf(photo);
+      var isSel = selectedIds.has(photo.id);
+      var src = photo.thumb || photo.dataUrl;
+      var delay = (idx * 0.035).toFixed(3);
+      var cls = 'photo-card';
+      if (isSel) cls += ' selected';
+      if (selectMode) cls += ' select-mode';
+
+      return '<div class="' + cls + '" style="animation-delay:' + delay + 's" data-id="' + photo.id + '" data-index="' + actualIdx + '">'
+        + '<button class="card-check" data-id="' + photo.id + '">&#10003;</button>'
+        + '<div class="card-actions">'
+        + '<button class="card-action-btn" data-action="download" data-id="' + photo.id + '" title="下载">&#8595;</button>'
+        + '<button class="card-action-btn danger" data-action="delete" data-id="' + photo.id + '" title="删除">&times;</button>'
+        + '</div>'
+        + '<img src="' + src + '" alt="' + photo.name + '" loading="lazy" data-index="' + actualIdx + '">'
+        + '<div class="photo-meta">'
+        + '<span class="photo-name">' + photo.name + '</span>'
+        + '<span class="photo-size">' + formatSize(photo.size) + '</span>'
+        + '</div></div>';
+    }).join('');
+
+    if (filtered.length === 0 && photos.length === 0) {
+      gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">&#128230;</span><div class="empty-title">还没有照片哦~</div><div class="empty-text">快上传你的第一张照片来装饰小屋吧！</div></div>';
+    } else if (filtered.length === 0) {
+      gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">&#128269;</span><div class="empty-title">没有找到匹配的照片</div><div class="empty-text">换个关键词试试看~</div></div>';
+    } else {
+      gallery.innerHTML = cards;
+    }
+
+    photoCount.textContent = photos.length + ' 张照片';
+    toolbarRow.style.display = photos.length > 0 ? 'flex' : 'none';
+    clearAllBtn.style.display = photos.length > 0 ? '' : 'none';
+    exportAllBtn.style.display = photos.length > 0 ? '' : 'none';
+    selectToggle.classList.toggle('active', selectMode);
+    updateSelectionUI();
+    updateStorageBar();
+    attachEvents();
+  }
+
+  function updateSelectionUI() {
+    var count = selectedIds.size;
+    selectionCount.textContent = count;
+    if (count > 0) {
+      selectionToolbar.classList.add('active');
+    } else {
+      selectionToolbar.classList.remove('active');
+    }
+  }
+
+  function attachEvents() {
+    gallery.querySelectorAll('img').forEach(function(img) {
+      img.addEventListener('click', function() {
+        if (selectMode) return;
+        openLightbox(parseInt(img.dataset.index));
+      });
+    });
+
+    gallery.querySelectorAll('.card-check').forEach(function(cb) {
+      cb.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSelect(cb.dataset.id);
+      });
+    });
+
+    gallery.querySelectorAll('.card-action-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var id = btn.dataset.id;
+        var photo = photos.find(function(p) { return p.id === id; });
+        if (!photo) return;
+        if (btn.dataset.action === 'download') { downloadFile(photo.dataUrl, photo.name); showToast('照片已保存到电脑~'); }
+        else { deleteAndRefresh([id]); }
+      });
+    });
+
+    gallery.querySelectorAll('.photo-card').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (!selectMode) return;
+        if (e.target.closest('.card-action-btn') || e.target.closest('.card-check')) return;
+        toggleSelect(card.dataset.id);
+      });
+    });
+  }
+
+  function toggleSelect(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id);
+    else selectedIds.add(id);
+    var card = gallery.querySelector('.photo-card[data-id="' + id + '"]');
+    if (card) card.classList.toggle('selected', selectedIds.has(id));
+    updateSelectionUI();
+  }
+
+  function deleteAndRefresh(ids) {
+    return deletePhotos(ids).then(function() {
+      ids.forEach(function(id) { selectedIds.delete(id); });
+      photos = photos.filter(function(p) { return ids.indexOf(p.id) === -1; });
+      renderGallery(searchInput.value);
+      showToast(ids.length === 1 ? '照片已删除~' : ids.length + ' 张照片已删除~');
+    });
+  }
+
+  // ── Lightbox ──
+  function openLightbox(index) {
+    if (index < 0 || index >= photos.length) return;
+    currentLightboxIndex = index;
+    var p = photos[currentLightboxIndex];
+    lightboxImg.classList.remove('switching');
+    lightboxImg.src = p.dataUrl;
+    lightboxName.textContent = p.name;
+    lightboxDate.textContent = new Date(p.createdAt).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+    lightboxIndex.textContent = (currentLightboxIndex + 1) + ' / ' + photos.length;
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+    currentLightboxIndex = -1;
+  }
+
+  function lightboxNav(dir) {
+    if (photos.length === 0) return;
+    lightboxImg.classList.add('switching');
+    setTimeout(function() {
+      currentLightboxIndex = (currentLightboxIndex + dir + photos.length) % photos.length;
+      var p = photos[currentLightboxIndex];
+      lightboxImg.src = p.dataUrl;
+      lightboxName.textContent = p.name;
+      lightboxDate.textContent = new Date(p.createdAt).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+      lightboxIndex.textContent = (currentLightboxIndex + 1) + ' / ' + photos.length;
+      lightboxImg.classList.remove('switching');
+    }, 160);
+  }
+
+  // ── Upload ──
+  function handleFiles(files) {
+    if (!files || files.length === 0) return;
+    var valid = Array.from(files).filter(function(f) {
+      var ok = ['image/jpeg','image/png','image/webp','image/gif'];
+      if (ok.indexOf(f.type) === -1) { showToast('这个格式不支持哦: ' + f.name); return false; }
+      return true;
+    });
+    if (valid.length === 0) return;
+
+    var added = 0;
+    var promises = valid.map(function(file) {
+      return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          var dataUrl = reader.result;
+          createThumbnail(dataUrl, THUMB_SIZE).then(function(thumb) {
+            var photo = {
+              id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+              name: file.name, type: file.type, size: file.size,
+              dataUrl: dataUrl, thumb: thumb, createdAt: Date.now()
+            };
+            addPhoto(photo).then(function() {
+              photos.push(photo);
+              added++;
+              resolve();
+            }).catch(function() { resolve(); });
+          });
+        };
+        reader.onerror = function() { resolve(); };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(promises).then(function() {
+      if (added > 0) {
+        photos.sort(function(a, b) { return b.createdAt - a.createdAt; });
+        renderGallery(searchInput.value);
+        showToast('成功上传了 ' + added + ' 张照片~ &#127881;');
+      }
+    });
+  }
+
+  // ── Events ──
+  fileInput.addEventListener('change', function() { handleFiles(fileInput.files); fileInput.value = ''; });
+  dropArea.addEventListener('click', function() { fileInput.click(); });
+  dropArea.addEventListener('dragover', function(e) { e.preventDefault(); dropArea.classList.add('drag-over'); });
+  dropArea.addEventListener('dragleave', function() { dropArea.classList.remove('drag-over'); });
+  dropArea.addEventListener('drop', function(e) { e.preventDefault(); dropArea.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+  searchInput.addEventListener('input', function() { renderGallery(searchInput.value); });
+
+  selectToggle.addEventListener('click', function() {
+    selectMode = !selectMode;
+    if (!selectMode) selectedIds.clear();
+    renderGallery(searchInput.value);
+  });
+
+  $('cancelSelection').addEventListener('click', function() { selectedIds.clear(); selectMode = false; renderGallery(searchInput.value); });
+  $('downloadSelected').addEventListener('click', function() {
+    var sel = photos.filter(function(p) { return selectedIds.has(p.id); });
+    downloadPhotos(sel);
+    selectedIds.clear(); selectMode = false;
+    renderGallery(searchInput.value);
+  });
+  $('deleteSelected').addEventListener('click', function() {
+    var ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm('确定要删除选中的 ' + ids.length + ' 张照片吗？')) return;
+    deleteAndRefresh(ids).then(function() {
+      selectMode = false;
+      renderGallery(searchInput.value);
+    });
+  });
+
+  $('lightboxClose').addEventListener('click', closeLightbox);
+  $('lightboxPrev').addEventListener('click', function() { lightboxNav(-1); });
+  $('lightboxNext').addEventListener('click', function() { lightboxNav(1); });
+  lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
+  $('lightboxDownload').addEventListener('click', function() {
+    var p = photos[currentLightboxIndex];
+    if (p) { downloadFile(p.dataUrl, p.name); showToast('照片已保存到电脑~'); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lightboxNav(-1);
+    if (e.key === 'ArrowRight') lightboxNav(1);
+  });
+
+  exportAllBtn.addEventListener('click', function() { if (photos.length) downloadPhotos(photos); });
+  clearAllBtn.addEventListener('click', function() {
+    if (!confirm('确定要删除全部 ' + photos.length + ' 张照片吗？这个操作不能撤销哦！')) return;
+    clearAll().then(function() {
+      photos = []; selectedIds.clear(); selectMode = false;
+      renderGallery(); showToast('所有照片已清空~');
+    });
+  });
+
+  // ── Init ──
+  (function init() {
+    openDB().then(function() {
+      return getAllPhotos();
+    }).then(function(all) {
+      photos = all;
+      photos.sort(function(a, b) { return b.createdAt - a.createdAt; });
+      renderGallery();
+    }).catch(function(err) {
+      showToast('初始化失败，请刷新页面重试~');
+    });
+  })();
+})();
+</script>
+</body>
+</html>
