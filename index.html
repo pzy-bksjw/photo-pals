@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Photo Pals — 照片小屋</title>
+<title>Photo Pals — 照片视频小屋</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -589,6 +589,60 @@ header {
   font-weight: 500;
 }
 
+/* ── Video badge on card ── */
+.photo-card .video-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  background: rgba(0,0,0,0.55);
+  border: 3px solid rgba(255,255,255,0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #fff;
+  pointer-events: none;
+  transition: all 0.3s var(--ease-bounce);
+}
+
+.photo-card:hover .video-badge {
+  transform: translate(-50%, -50%) scale(1.15);
+  background: var(--pink);
+  border-color: var(--pink);
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  font-family: var(--display);
+  font-size: 0.6rem;
+  font-weight: 600;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Video element in lightbox ── */
+.lightbox-content video {
+  max-width: 88vw;
+  max-height: 70vh;
+  border-radius: var(--radius);
+  border: 3px solid rgba(255,255,255,0.15);
+  display: none;
+}
+
+.lightbox-content video.show { display: block; }
+.lightbox-content img.hide { display: none; }
+
 /* ══════════ BOTTOM ILLUSTRATION STRIP ══════════ */
 .bottom-illustration {
   position: fixed;
@@ -919,10 +973,10 @@ header {
 <div class="drop-zone">
   <div class="drop-area" id="dropArea">
     <span class="drop-icon">&#127873;</span>
-    <div class="drop-title">把照片拖到这里吧 ~</div>
-    <div class="drop-subtitle">或者点击这里选择文件 · JPG / PNG / WebP / GIF</div>
+    <div class="drop-title">把照片和视频拖到这里吧 ~</div>
+    <div class="drop-subtitle">或者点击这里选择文件 · JPG / PNG / WebP / GIF / MP4 / WebM</div>
   </div>
-  <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+  <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple>
 </div>
 
 <div class="storage-bar-wrap" id="storageBarWrap">
@@ -967,6 +1021,7 @@ header {
   <button class="lightbox-nav lightbox-next" id="lightboxNext">&rarr;</button>
   <div class="lightbox-content">
     <img id="lightboxImg" src="" alt="">
+    <video id="lightboxVideo" controls playsinline></video>
     <div class="lightbox-info">
       <span id="lightboxName"></span>
       <span class="info-sep"></span>
@@ -1137,10 +1192,47 @@ header {
     });
   }
 
+  function isVideo(type) { return type.indexOf('video/') === 0; }
+
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + 'B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
+  }
+
+  function formatDuration(seconds) {
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  // ── Video thumbnail (capture first frame) ──
+  function createVideoThumb(dataUrl) {
+    return new Promise(function(resolve) {
+      var video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      video.src = dataUrl;
+
+      video.onloadeddata = function() {
+        video.currentTime = Math.min(1, video.duration / 3 || 1);
+      };
+
+      video.onseeked = function() {
+        var c = document.createElement('canvas');
+        c.width = 400;
+        c.height = Math.round(400 * (video.videoHeight / video.videoWidth)) || 300;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(video, 0, 0, c.width, c.height);
+        var thumb = c.toDataURL('image/jpeg', 0.75);
+        resolve({ thumb: thumb, duration: video.duration || 0 });
+        video.remove();
+      };
+
+      video.onerror = function() { resolve({ thumb: null, duration: 0 }); video.remove(); };
+    });
   }
 
   function updateStorageBar() {
@@ -1193,6 +1285,14 @@ header {
       var cls = 'photo-card';
       if (isSel) cls += ' selected';
       if (selectMode) cls += ' select-mode';
+      var isVid = isVideo(photo.type);
+      var videoOverlay = '';
+      if (isVid) {
+        videoOverlay = '<div class="video-badge">&#9654;</div>';
+        if (photo.duration) {
+          videoOverlay += '<span class="video-duration">' + formatDuration(photo.duration) + '</span>';
+        }
+      }
 
       return '<div class="' + cls + '" style="animation-delay:' + delay + 's" data-id="' + photo.id + '" data-index="' + actualIdx + '">'
         + '<button class="card-check" data-id="' + photo.id + '">&#10003;</button>'
@@ -1200,9 +1300,10 @@ header {
         + '<button class="card-action-btn" data-action="download" data-id="' + photo.id + '" title="下载">&#8595;</button>'
         + '<button class="card-action-btn danger" data-action="delete" data-id="' + photo.id + '" title="删除">&times;</button>'
         + '</div>'
+        + videoOverlay
         + '<img src="' + src + '" alt="' + photo.name + '" loading="lazy" data-index="' + actualIdx + '">'
         + '<div class="photo-meta">'
-        + '<span class="photo-name">' + photo.name + '</span>'
+        + '<span class="photo-name">' + (isVid ? '&#127910; ' : '') + photo.name + '</span>'
         + '<span class="photo-size">' + formatSize(photo.size) + '</span>'
         + '</div></div>';
     }).join('');
@@ -1256,7 +1357,7 @@ header {
         var id = btn.dataset.id;
         var photo = photos.find(function(p) { return p.id === id; });
         if (!photo) return;
-        if (btn.dataset.action === 'download') { downloadFile(photo.dataUrl, photo.name); showToast('照片已保存到电脑~'); }
+        if (btn.dataset.action === 'download') { downloadFile(photo.dataUrl, photo.name); showToast('文件已保存到电脑~'); }
         else { deleteAndRefresh([id]); }
       });
     });
@@ -1288,13 +1389,28 @@ header {
   }
 
   // ── Lightbox ──
+  var lightboxVideo = $('lightboxVideo');
+
   function openLightbox(index) {
     if (index < 0 || index >= photos.length) return;
     currentLightboxIndex = index;
     var p = photos[currentLightboxIndex];
-    lightboxImg.classList.remove('switching');
-    lightboxImg.src = p.dataUrl;
-    lightboxName.textContent = p.name;
+    var vid = isVideo(p.type);
+
+    lightboxImg.classList.remove('switching', 'hide');
+    lightboxVideo.classList.remove('show');
+    lightboxVideo.pause();
+    lightboxVideo.src = '';
+
+    if (vid) {
+      lightboxImg.classList.add('hide');
+      lightboxVideo.src = p.dataUrl;
+      lightboxVideo.classList.add('show');
+    } else {
+      lightboxImg.src = p.dataUrl;
+    }
+
+    lightboxName.textContent = (vid ? '&#127910; ' : '') + p.name;
     lightboxDate.textContent = new Date(p.createdAt).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
     lightboxIndex.textContent = (currentLightboxIndex + 1) + ' / ' + photos.length;
     lightbox.classList.add('open');
@@ -1305,19 +1421,35 @@ header {
     lightbox.classList.remove('open');
     document.body.style.overflow = '';
     currentLightboxIndex = -1;
+    lightboxVideo.pause();
+    lightboxVideo.src = '';
   }
 
   function lightboxNav(dir) {
     if (photos.length === 0) return;
+    lightboxVideo.pause();
+    lightboxVideo.src = '';
     lightboxImg.classList.add('switching');
+
     setTimeout(function() {
       currentLightboxIndex = (currentLightboxIndex + dir + photos.length) % photos.length;
       var p = photos[currentLightboxIndex];
-      lightboxImg.src = p.dataUrl;
-      lightboxName.textContent = p.name;
+      var vid = isVideo(p.type);
+
+      lightboxImg.classList.remove('switching', 'hide');
+      lightboxVideo.classList.remove('show');
+
+      if (vid) {
+        lightboxImg.classList.add('hide');
+        lightboxVideo.src = p.dataUrl;
+        lightboxVideo.classList.add('show');
+      } else {
+        lightboxImg.src = p.dataUrl;
+      }
+
+      lightboxName.textContent = (vid ? '&#127910; ' : '') + p.name;
       lightboxDate.textContent = new Date(p.createdAt).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
       lightboxIndex.textContent = (currentLightboxIndex + 1) + ' / ' + photos.length;
-      lightboxImg.classList.remove('switching');
     }, 160);
   }
 
@@ -1325,7 +1457,7 @@ header {
   function handleFiles(files) {
     if (!files || files.length === 0) return;
     var valid = Array.from(files).filter(function(f) {
-      var ok = ['image/jpeg','image/png','image/webp','image/gif'];
+      var ok = ['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','video/quicktime'];
       if (ok.indexOf(f.type) === -1) { showToast('这个格式不支持哦: ' + f.name); return false; }
       return true;
     });
@@ -1337,18 +1469,22 @@ header {
         var reader = new FileReader();
         reader.onload = function() {
           var dataUrl = reader.result;
-          createThumbnail(dataUrl, THUMB_SIZE).then(function(thumb) {
+          var isVid = isVideo(file.type);
+
+          var thumbPromise = isVid ? createVideoThumb(dataUrl) : createThumbnail(dataUrl, THUMB_SIZE).then(function(t) { return { thumb: t, duration: 0 }; });
+
+          thumbPromise.then(function(result) {
             var photo = {
               id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
               name: file.name, type: file.type, size: file.size,
-              dataUrl: dataUrl, thumb: thumb, createdAt: Date.now()
+              dataUrl: dataUrl, thumb: result.thumb || null, duration: result.duration || 0, createdAt: Date.now()
             };
             addPhoto(photo).then(function() {
               photos.push(photo);
               added++;
               resolve();
             }).catch(function() { resolve(); });
-          });
+          }).catch(function() { resolve(); });
         };
         reader.onerror = function() { resolve(); };
         reader.readAsDataURL(file);
@@ -1359,7 +1495,7 @@ header {
       if (added > 0) {
         photos.sort(function(a, b) { return b.createdAt - a.createdAt; });
         renderGallery(searchInput.value);
-        showToast('成功上传了 ' + added + ' 张照片~ &#127881;');
+        showToast('成功上传了 ' + added + ' 个文件~ &#127881;');
       }
     });
   }
@@ -1401,7 +1537,7 @@ header {
   lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
   $('lightboxDownload').addEventListener('click', function() {
     var p = photos[currentLightboxIndex];
-    if (p) { downloadFile(p.dataUrl, p.name); showToast('照片已保存到电脑~'); }
+    if (p) { downloadFile(p.dataUrl, p.name); showToast('文件已保存到电脑~'); }
   });
 
   document.addEventListener('keydown', function(e) {
